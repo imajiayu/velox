@@ -119,7 +119,8 @@ VeloxToSubstraitExprConvertor::toSubstraitExpr(
 
   ::substrait::Expression_ReferenceSegment_StructField* directStruct =
       substraitFieldExpr->mutable_direct_reference()->mutable_struct_field();
-
+  // Add root_reference for direct_reference with struct_field.
+  substraitFieldExpr->mutable_root_reference();
   directStruct->set_field(inputType->getChildIdx(exprName));
   return *substraitFieldExpr;
 }
@@ -239,6 +240,15 @@ VeloxToSubstraitExprConvertor::toSubstraitNotNullLiteral(
       literalExpr->set_fp64(variantValue.value<TypeKind::DOUBLE>());
       break;
     }
+    case velox::TypeKind::VARCHAR: {
+      auto vCharValue = variantValue.value<StringView>();
+      ::substrait::Expression_Literal::VarChar* sVarChar =
+          new ::substrait::Expression_Literal::VarChar();
+      sVarChar->set_value(vCharValue.data());
+      sVarChar->set_length(vCharValue.size());
+      literalExpr->set_allocated_var_char(sVarChar);
+      break;
+    }
     case velox::TypeKind::BIGINT: {
       literalExpr->set_i64(variantValue.value<TypeKind::BIGINT>());
       break;
@@ -247,8 +257,25 @@ VeloxToSubstraitExprConvertor::toSubstraitNotNullLiteral(
       literalExpr->set_i32(variantValue.value<TypeKind::INTEGER>());
       break;
     }
+    case velox::TypeKind::SMALLINT: {
+      literalExpr->set_i16(variantValue.value<TypeKind::SMALLINT>());
+      break;
+    }
+    case velox::TypeKind::TINYINT: {
+      literalExpr->set_i8(variantValue.value<TypeKind::TINYINT>());
+      break;
+    }
     case velox::TypeKind::BOOLEAN: {
       literalExpr->set_boolean(variantValue.value<TypeKind::BOOLEAN>());
+      break;
+    }
+    case velox::TypeKind::REAL: {
+      literalExpr->set_fp32(variantValue.value<TypeKind::REAL>());
+      break;
+    }
+    case velox::TypeKind::TIMESTAMP: {
+      literalExpr->set_timestamp(
+          variantValue.value<TypeKind::TIMESTAMP>().getNanos());
       break;
     }
     default:

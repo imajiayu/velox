@@ -321,7 +321,7 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
               std::dynamic_pointer_cast<const core::CallTypedExpr>(expr)) {
         VELOX_NYI("In Velox Plan, the aggregates type cannot be CallTypedExpr");
       } else {
-        aggFunction->add_args()->MergeFrom(
+        aggFunction->add_arguments()->mutable_value()->MergeFrom(
             exprConvertor_->toSubstraitExpr(arena, expr, inputType));
       }
     }
@@ -368,8 +368,8 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
   for (int i = 0; i < numColumns; i++) {
     joinCondition.emplace_back(std::make_shared<core::CallTypedExpr>(
         BOOLEAN(),
-        std::vector<core::TypedExprPtr>{joinNode->leftKeys().at(i),
-                                        joinNode->rightKeys().at(i)},
+        std::vector<core::TypedExprPtr>{
+            joinNode->leftKeys().at(i), joinNode->rightKeys().at(i)},
         "eq"));
   }
 

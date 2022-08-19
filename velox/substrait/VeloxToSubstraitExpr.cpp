@@ -143,8 +143,11 @@ const ::substrait::Expression& VeloxToSubstraitExprConvertor::toSubstraitExpr(
         substraitExpr->mutable_scalar_function();
 
     // TODO need to change yaml file to register function, now is dummy.
-
-    scalarExpr->set_function_reference(functionMap_[functionName]);
+    if (functionMap_.find(functionName) == functionMap_.end()) {
+      VELOX_NYI("Haven't support function '{}'", functionName);
+    }else{
+      scalarExpr->set_function_reference(functionMap_[functionName]);
+    }
 
     for (auto& arg : inputs) {
       scalarExpr->add_arguments()->mutable_value()->MergeFrom(

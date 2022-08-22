@@ -130,38 +130,19 @@ const ::substrait::Expression& VeloxToSubstraitExprConvertor::toSubstraitExpr(
     google::protobuf::Arena& arena,
     const std::shared_ptr<const core::CallTypedExpr>& callTypeExpr,
     const RowTypePtr& inputType) {
-  ::substrait::Expression* substraitExpr =
-      google::protobuf::Arena::CreateMessage<::substrait::Expression>(&arena);
-
-  auto inputs = callTypeExpr->inputs();
-  auto& functionName = callTypeExpr->name();
-
-  // The processing is different for different function names.
-  // TODO add support for if Expr and switch Expr
-  if (functionName != "if" && functionName != "switch") {
-    ::substrait::Expression_ScalarFunction* scalarExpr =
-        substraitExpr->mutable_scalar_function();
-
-    // TODO need to change yaml file to register function, now is dummy.
-    if (functionMap_.find(functionName) == functionMap_.end()) {
-      VELOX_NYI("Haven't support function '{}'", functionName);
-    }else{
-      scalarExpr->set_function_reference(functionMap_[functionName]);
+  SubstraitExprConverter topLevelConverter =
+      [&](const core::TypedExprPtr& typeExpr) {
+        return this->toSubstraitExpr(arena, typeExpr, inputType);
+      };
+  for (const auto& cc : callConverters_) {
+    auto expressionOption = cc->convert(callTypeExpr, arena, topLevelConverter);
+    if (expressionOption.has_value()) {
+      return *expressionOption.value();
     }
-
-    for (auto& arg : inputs) {
-      scalarExpr->add_arguments()->mutable_value()->MergeFrom(
-          toSubstraitExpr(arena, arg, inputType));
-    }
-
-    scalarExpr->mutable_output_type()->MergeFrom(
-        typeConvertor_->toSubstraitType(arena, callTypeExpr->type()));
-
-  } else {
-    VELOX_NYI("Unsupported function name '{}'", functionName);
   }
 
-  return *substraitExpr;
+
+  VELOX_NYI("Unsupported function name '{}'", callTypeExpr->name());
 }
 
 const ::substrait::Expression_Literal&

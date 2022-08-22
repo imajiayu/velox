@@ -21,6 +21,7 @@
 #include "velox/vector/tests/VectorMaker.h"
 
 #include "velox/substrait/SubstraitToVeloxPlan.h"
+#include "velox/substrait/VeloxToSubstraitMappings.h"
 #include "velox/substrait/VeloxToSubstraitPlan.h"
 
 using namespace facebook::velox;
@@ -73,6 +74,7 @@ class VeloxSubstraitRoundTripPlanConverterTest : public OperatorTestBase {
 
   std::shared_ptr<VeloxToSubstraitPlanConvertor> veloxConvertor_ =
       std::make_shared<VeloxToSubstraitPlanConvertor>();
+
   std::shared_ptr<SubstraitVeloxPlanConverter> substraitConverter_ =
       std::make_shared<SubstraitVeloxPlanConverter>();
 };
@@ -207,6 +209,25 @@ TEST_F(VeloxSubstraitRoundTripPlanConverterTest, sumMask) {
       "SELECT sum(c0) FILTER (WHERE c2 % 2 < 10), "
       "sum(c0) FILTER (WHERE c3 % 3 = 0), sum(c1) FILTER (WHERE c3 % 3 = 0) "
       "FROM tmp");
+}
+
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, caseWhen) {
+  auto vectors = makeVectors(3, 4, 2);
+  createDuckDbTable(vectors);
+  auto plan = PlanBuilder()
+                  .values(vectors)
+                  .project({"case when 1=1 then 1 else 0  end as x"})
+                  .planNode();
+  assertPlanConversion(
+      plan, "SELECT case when 1=1 then 1 else 0  end as x  FROM tmp");
+}
+
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, ifThen) {
+  auto vectors = makeVectors(3, 4, 2);
+  createDuckDbTable(vectors);
+  auto plan =
+      PlanBuilder().values(vectors).project({"if (1=1, 0,1) as x"}).planNode();
+  assertPlanConversion(plan, "SELECT if (1=1, 0,1) as x  FROM tmp");
 }
 
 int main(int argc, char** argv) {

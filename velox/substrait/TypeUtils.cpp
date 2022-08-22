@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "velox/type/Type.h"
+#include "velox/substrait/TypeUtils.h"
 
 namespace facebook::velox::substrait {
 namespace {
@@ -109,6 +109,26 @@ TypePtr toVeloxType(const std::string& typeName) {
     default:
       VELOX_NYI("Velox type conversion not supported for type {}.", typeName);
   }
+}
+
+SubstraitSignaturePtr toSubstraitSignature(
+    const core::CallTypedExprPtr& callTypedExpr) {
+  const auto& veloxFunctionName = callTypedExpr->name();
+
+  if (callTypedExpr->inputs().empty()) {
+    return std::make_shared<SubstraitSignature>(
+        veloxFunctionName, SubstraitType::fromVelox(callTypedExpr->type()));
+  }
+
+  std::vector<SubstraitTypePtr> types;
+  for (auto& input : callTypedExpr->inputs()) {
+    types.emplace_back(SubstraitType::fromVelox(input->type()));
+  }
+
+  return SubstraitSignature::of(
+      veloxFunctionName,
+      SubstraitType::fromVelox(callTypedExpr->type()),
+      types);
 }
 
 } // namespace facebook::velox::substrait

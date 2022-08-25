@@ -16,7 +16,7 @@
 # Minimal setup for Ubuntu 20.04.
 set -eufx -o pipefail
 SCRIPTDIR=$(dirname "${BASH_SOURCE[0]}")
-source $SCRIPTDIR/setup-helper-functions.sh
+source $SCRIPTDIR/ci-setup-helper-functions.sh
 
 # Folly must be built with the same compiler flags so that some low level types
 # are the same size.
@@ -27,15 +27,20 @@ NPROC=$(getconf _NPROCESSORS_ONLN)
 DEPENDENCY_DIR=${DEPENDENCY_DIR:-$(pwd)}
 
 # Install all velox and folly dependencies.
-sudo apt update
-DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC sudo apt-get -y install tzdata
-sudo apt install -y \
+apt update
+export DEBIAN_FRONTEND=noninteractive
+TZ=Etc/UTC apt-get -y install tzdata
+apt install -y --no-install-recommends \
   g++ \
   cmake \
   ccache \
   ninja-build \
   checkinstall \
   git \
+  make \
+  ssh \
+  python3-pip \
+  clang-format-12 \
   libssl-dev \
   libboost-all-dev \
   libdouble-conversion-dev \
@@ -53,7 +58,20 @@ sudo apt install -y \
   liblzo2-dev \
   protobuf-compiler \
   bison \
-  flex
+  flex \
+  libfl-dev \
+  vim \
+  curl \
+  wget \
+  systemctl \
+  unzip \
+  zip 
+
+pip3 install cmake_format black regex
+
+apt purge --auto-remove -y python3-pip
+update-alternatives --install /usr/bin/clang-format clang-format "$(command -v clang-format-12)" 12
+apt clean
 
 function run_and_time {
   time "$@"
@@ -102,4 +120,4 @@ function install_velox_deps {
   fi
 )
 
-echo "All deps for Velox installed! Now try \"make\""
+echo "All deps for Ci installed! !"

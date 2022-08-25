@@ -311,3 +311,7 @@ src/amalgamation/
 .cproject
 .settings
 ~
+
+# build deps
+fmt
+folly

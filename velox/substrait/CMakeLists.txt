@@ -47,6 +47,7 @@ set(SRCS
     SubstraitToVeloxExpr.cpp
     SubstraitToVeloxPlan.cpp
     TypeUtils.cpp
+    ExprUtils.cpp
     SubstraitType.cpp
     SubstraitSignature.cpp
     SubstraitFunction.cpp

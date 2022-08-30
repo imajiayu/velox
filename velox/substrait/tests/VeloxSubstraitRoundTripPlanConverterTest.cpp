@@ -95,6 +95,33 @@ TEST_F(VeloxSubstraitRoundTripPlanConverterTest, filter) {
   assertPlanConversion(plan, "SELECT * FROM tmp WHERE c2 < 1000");
 }
 
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, filterWithLogicalOp) {
+  auto vectors = makeVectors(3, 4, 2);
+  createDuckDbTable(vectors);
+
+  auto plan =
+      PlanBuilder().values(vectors).filter("c0 < 100 and c2 < 1000").planNode();
+  assertPlanConversion(plan, "SELECT * FROM tmp WHERE c0 < 100 and c2 < 1000");
+
+  plan =
+      PlanBuilder().values(vectors).filter("c0 < 100 or c2 < 1000").planNode();
+  assertPlanConversion(plan, "SELECT * FROM tmp WHERE c0 < 100 or c2 < 1000");
+
+  plan = PlanBuilder().values(vectors).filter("not c0 < 100").planNode();
+  assertPlanConversion(plan, "SELECT * FROM tmp WHERE not c0 < 100");
+}
+
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, filterWithCompareOp) {
+  auto vectors = makeVectors(3, 4, 2);
+  createDuckDbTable(vectors);
+
+  auto plan = PlanBuilder()
+                  .values(vectors)
+                  .filter("c0 between 100 and 1000")
+                  .planNode();
+  assertPlanConversion(plan, "SELECT * FROM tmp WHERE c0 between 100 and 1000");
+}
+
 TEST_F(VeloxSubstraitRoundTripPlanConverterTest, null) {
   auto vectors = makeRowVector(ROW({}, {}), 1);
   auto plan = PlanBuilder().values({vectors}).project({"NULL"}).planNode();
@@ -174,6 +201,19 @@ TEST_F(VeloxSubstraitRoundTripPlanConverterTest, sumAndCount) {
                   .planNode();
 
   assertPlanConversion(plan, "SELECT sum(c1), count(c4) FROM tmp");
+}
+
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, avgAndCount) {
+  auto vectors = makeVectors(2, 7, 3);
+  createDuckDbTable(vectors);
+
+  auto plan = PlanBuilder()
+                  .values(vectors)
+                  .partialAggregation({}, {"avg(c1)", "count(c4)"})
+                  .finalAggregation()
+                  .planNode();
+
+  assertPlanConversion(plan, "SELECT avg(c1), count(c4) FROM tmp");
 }
 
 TEST_F(VeloxSubstraitRoundTripPlanConverterTest, sumGlobal) {

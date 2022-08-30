@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include <core/Expressions.h>
-#include "velox/substrait/SubstraitType.h"
-#include "velox/type/Type.h"
+#pragma once
+
+#include "velox/expression/Expr.h"
+#include "velox/substrait/SubstraitSignature.h"
+#include "velox/substrait/TypeUtils.h"
 
 namespace facebook::velox::substrait {
 
-/// Return the Velox type according to the typename.
-TypePtr toVeloxType(const std::string& typeName);
-
-/// Return the Substrait extension type  according to the velox type.
-SubstraitTypePtr fromVelox(const TypePtr& type);
+/// convert velox callTyped expression to substrait function signature.
+SubstraitSignaturePtr toSubstraitSignature(
+    const core::CallTypedExprPtr& callTypedExpr);
 
 } // namespace facebook::velox::substrait

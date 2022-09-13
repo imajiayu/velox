@@ -82,6 +82,9 @@ SubstraitVeloxExprConverter::toVeloxExpr(
     case ::substrait::Expression_Literal::LiteralTypeCase::kFp64:
       return std::make_shared<core::ConstantTypedExpr>(
           variant(substraitLit.fp64()));
+    case ::substrait::Expression_Literal::LiteralTypeCase::kVarChar:
+      return std::make_shared<core::ConstantTypedExpr>(
+          variant(substraitLit.var_char().value()));
     case ::substrait::Expression_Literal::LiteralTypeCase::kNull: {
       auto veloxType =
           toVeloxType(substraitParser_.parseType(substraitLit.null())->type);

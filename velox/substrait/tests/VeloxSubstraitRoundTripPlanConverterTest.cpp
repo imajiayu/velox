@@ -95,7 +95,27 @@ TEST_F(VeloxSubstraitRoundTripPlanConverterTest, filter) {
   assertPlanConversion(plan, "SELECT * FROM tmp WHERE c2 < 1000");
 }
 
-TEST_F(VeloxSubstraitRoundTripPlanConverterTest, filterWithLogicalOp) {
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, scalarFunc_string_test) {
+  std::vector<RowVectorPtr> vectors;
+  vectors.reserve(1);
+  auto dow = makeFlatVector<std::string>(
+      {"monday",
+       "tuesday",
+       "wednesday",
+       "thursday",
+       "friday",
+       "saturday",
+       "sunday"});
+  auto rowVector = makeRowVector({"dow"}, {dow});
+  vectors.emplace_back(rowVector);
+  createDuckDbTable(vectors);
+  auto plan = PlanBuilder().values(vectors).filter("dow like 's%'").planNode();
+  assertPlanConversion(plan, "SELECT * FROM tmp where dow like 's%'");
+  plan = PlanBuilder().values(vectors).project({"substr(dow,1,3)"}).planNode();
+  assertPlanConversion(plan, "SELECT substr(dow,1,3) FROM tmp ");
+}
+
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, scalarFunc_boolean_test) {
   auto vectors = makeVectors(3, 4, 2);
   createDuckDbTable(vectors);
 
@@ -111,7 +131,7 @@ TEST_F(VeloxSubstraitRoundTripPlanConverterTest, filterWithLogicalOp) {
   assertPlanConversion(plan, "SELECT * FROM tmp WHERE not c0 < 100");
 }
 
-TEST_F(VeloxSubstraitRoundTripPlanConverterTest, filterWithCompareOp) {
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, scalarFunc_compare_test) {
   auto vectors = makeVectors(3, 4, 2);
   createDuckDbTable(vectors);
 
@@ -262,12 +282,27 @@ TEST_F(VeloxSubstraitRoundTripPlanConverterTest, caseWhen) {
       plan, "SELECT case when 1=1 then 1 else 0  end as x  FROM tmp");
 }
 
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, cast) {
+  auto vectors = makeVectors(3, 4, 2);
+  createDuckDbTable(vectors);
+  auto plan = PlanBuilder().values(vectors).project({"true"}).planNode();
+  assertPlanConversion(plan, "SELECT true  FROM tmp");
+}
+
 TEST_F(VeloxSubstraitRoundTripPlanConverterTest, ifThen) {
   auto vectors = makeVectors(3, 4, 2);
   createDuckDbTable(vectors);
   auto plan =
       PlanBuilder().values(vectors).project({"if (1=1, 0,1) as x"}).planNode();
   assertPlanConversion(plan, "SELECT if (1=1, 0,1) as x  FROM tmp");
+}
+
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, coalesce) {
+  auto vectors = makeVectors(3, 4, 2);
+  createDuckDbTable(vectors);
+  auto plan =
+      PlanBuilder().values(vectors).project({"coalesce(c0,c1) "}).planNode();
+  assertPlanConversion(plan, "SELECT coalesce(c0,c1)   FROM tmp");
 }
 
 int main(int argc, char** argv) {

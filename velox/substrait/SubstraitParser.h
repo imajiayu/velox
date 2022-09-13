@@ -98,7 +98,8 @@ class SubstraitParser {
       {"subtract", "minus"},
       {"modulus", "mod"},
       {"not_equal", "neq"},
-      {"equal", "eq"}};
+      {"equal", "eq"},
+      {"substring", "substr"}};
 };
 
 } // namespace facebook::velox::substrait

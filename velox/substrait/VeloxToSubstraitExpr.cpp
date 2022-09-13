@@ -305,12 +305,12 @@ VeloxToSubstraitExprConvertor::toSubstraitNullLiteral(
       break;
     }
     case velox::TypeKind::VARCHAR: {
-      ::substrait::Type_VarChar* nullValue =
-          google::protobuf::Arena::CreateMessage<::substrait::Type_VarChar>(
+      ::substrait::Type_String* nullValue =
+          google::protobuf::Arena::CreateMessage<::substrait::Type_String>(
               &arena);
       nullValue->set_nullability(
           ::substrait::Type_Nullability_NULLABILITY_NULLABLE);
-      substraitField->mutable_null()->set_allocated_varchar(nullValue);
+      substraitField->mutable_null()->set_allocated_string(nullValue);
       break;
     }
     case velox::TypeKind::REAL: {

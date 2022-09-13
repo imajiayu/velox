@@ -19,7 +19,8 @@ add_executable(
   SubstraitFunctionLookupTest.cpp SubstraitSignatureTest.cpp
   SubstraitTypeTest.cpp SubstraitTypeLookupTest.cpp
   SubstraitExtensionTest.cpp JsonToProtoConverter.cpp
-  VeloxSubstraitRoundTripPlanConverterTest.cpp)
+  VeloxSubstraitRoundTripPlanConverterTest.cpp
+  VeloxSustraitJoinRoundTripConverterTest.cpp)
 
 add_dependencies(velox_plan_conversion_test velox_substrait_plan_converter)
 

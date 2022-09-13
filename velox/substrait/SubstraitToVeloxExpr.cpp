@@ -82,15 +82,18 @@ SubstraitVeloxExprConverter::toVeloxExpr(
     case ::substrait::Expression_Literal::LiteralTypeCase::kFp64:
       return std::make_shared<core::ConstantTypedExpr>(
           variant(substraitLit.fp64()));
-    case ::substrait::Expression_Literal::LiteralTypeCase::kVarChar:
+    case ::substrait::Expression_Literal::LiteralTypeCase::kString:
       return std::make_shared<core::ConstantTypedExpr>(
-          variant(substraitLit.var_char().value()));
+          variant(substraitLit.string()));
     case ::substrait::Expression_Literal::LiteralTypeCase::kNull: {
       auto veloxType =
           toVeloxType(substraitParser_.parseType(substraitLit.null())->type);
       return std::make_shared<core::ConstantTypedExpr>(
           veloxType, variant::null(veloxType->kind()));
     }
+    case ::substrait::Expression_Literal::LiteralTypeCase::kVarChar:
+      return std::make_shared<core::ConstantTypedExpr>(
+          variant(substraitLit.var_char().value()));
     default:
       VELOX_NYI(
           "Substrait conversion not supported for type case '{}'", typeCase);

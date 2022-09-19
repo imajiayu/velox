@@ -16,7 +16,6 @@
 
 #include "velox/substrait/SubstraitToVeloxPlan.h"
 #include "velox/core/Expressions.h"
-#include "velox/substrait/JoinUtils.h"
 #include "velox/substrait/TypeUtils.h"
 #include "velox/type/Type.h"
 #include "velox/vector/ComplexVector.h"
@@ -489,7 +488,25 @@ core::PlanNodePtr SubstraitVeloxPlanConverter::toVeloxPlan(
     return planNode;
   }
   if (rel.has_join()) {
-    return toVeloxPlan(rel.join(), pool);
+    return toVeloxPlan<::substrait::JoinRel>(
+        rel.join(),
+        join::fromProto(rel.join().type()),
+        SubstraitJoinKind::k_logicalJoin,
+        pool);
+  }
+  if (rel.has_hashjoin()) {
+    return toVeloxPlan<::substrait::HashJoinRel>(
+        rel.hashjoin(),
+        hashJoin::fromProto(rel.hashjoin().type()),
+        SubstraitJoinKind::k_physicalHashJoin,
+        pool);
+  }
+  if (rel.has_mergejoin()) {
+    return toVeloxPlan<::substrait::MergeJoinRel>(
+        rel.mergejoin(),
+        mergeJoin::fromProto(rel.mergejoin().type()),
+        SubstraitJoinKind::k_physicalMergeJoin,
+        pool);
   }
   VELOX_NYI("Substrait conversion not supported for Rel.");
 }
@@ -739,8 +756,11 @@ const std::string& SubstraitVeloxPlanConverter::findFunction(
   return substraitParser_->findFunctionSpec(functionMap_, id);
 }
 
+template <class SubstraitJoinRel>
 core::PlanNodePtr SubstraitVeloxPlanConverter::toVeloxPlan(
-    const ::substrait::JoinRel& join,
+    const SubstraitJoinRel& join,
+    const core::JoinType joinType,
+    const SubstraitJoinKind joinKind,
     memory::MemoryPool* pool) {
   if (!join.has_left() || !join.has_right()) {
     VELOX_FAIL("Left child Rel and Right child Rel are expected in JoinRel.");
@@ -752,7 +772,6 @@ core::PlanNodePtr SubstraitVeloxPlanConverter::toVeloxPlan(
     VELOX_FAIL("Join expression must be a scalar function in JoinRel.");
   }
 
-  auto joinType = join::fromProto(join.type());
   auto leftNode = toVeloxPlan(join.left(), pool);
   auto rightNode = toVeloxPlan(join.right(), pool);
   auto outputType = leftNode->outputType()->unionWith(rightNode->outputType());
@@ -763,31 +782,27 @@ core::PlanNodePtr SubstraitVeloxPlanConverter::toVeloxPlan(
   auto joinExpression =
       exprConverter_->toVeloxExpr(join.expression(), outputType);
 
-  if (const auto& callTypedExpr =
-          std::dynamic_pointer_cast<const core::CallTypedExpr>(
-              joinExpression)) {
+  std::vector<core::FieldAccessTypedExprPtr> leftKeys;
+  std::vector<core::FieldAccessTypedExprPtr> rightKeys;
+  leftKeys.reserve(joinExpression->inputs().size() / 2);
+  rightKeys.reserve(joinExpression->inputs().size() / 2);
 
-    std::vector<core::FieldAccessTypedExprPtr> leftKeys;
-    std::vector<core::FieldAccessTypedExprPtr> rightKeys;
-    leftKeys.reserve(callTypedExpr->inputs().size() / 2);
-    rightKeys.reserve(callTypedExpr->inputs().size() / 2);
+  // extract left keys and right keys from inputs of callTypedExpr
+  const auto& inputs = joinExpression->inputs();
+  for (auto i = 0; i < joinExpression->inputs().size(); i += 2) {
+    const auto& leftKey =
+        std::dynamic_pointer_cast<const core::FieldAccessTypedExpr>(
+            inputs.at(i));
+    leftKeys.emplace_back(leftKey);
 
-    //extract left keys and right keys from inputs of callTypedExpr
-    for (auto i = 0; i < callTypedExpr->inputs().size(); i += 2) {
-      const auto& inputs = callTypedExpr->inputs();
+    const auto& rightKey =
+        std::dynamic_pointer_cast<const core::FieldAccessTypedExpr>(
+            inputs.at(i + 1));
+    rightKeys.emplace_back(rightKey);
+  }
 
-      const auto& leftKey =
-          std::dynamic_pointer_cast<const core::FieldAccessTypedExpr>(
-              inputs.at(i));
-      leftKeys.emplace_back(leftKey);
-
-      const auto& rightKey =
-          std::dynamic_pointer_cast<const core::FieldAccessTypedExpr>(
-              inputs.at(i + 1));
-      rightKeys.emplace_back(rightKey);
-    }
-
-    return std::make_shared<core::HashJoinNode>(
+  if (SubstraitJoinKind::k_physicalMergeJoin == joinKind) {
+    return std::make_shared<core::MergeJoinNode>(
         nextPlanNodeId(),
         joinType,
         leftKeys,
@@ -797,8 +812,15 @@ core::PlanNodePtr SubstraitVeloxPlanConverter::toVeloxPlan(
         rightNode,
         outputType);
   } else {
-    VELOX_FAIL(
-        "Fail to convert Substrait join expression to Velox CallTypedExpression.");
+    return std::make_shared<core::HashJoinNode>(
+        nextPlanNodeId(),
+        joinType,
+        leftKeys,
+        rightKeys,
+        filter,
+        leftNode,
+        rightNode,
+        outputType);
   }
 }
 

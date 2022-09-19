@@ -143,8 +143,17 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
     return;
   }
   if (auto joinNode =
-          std::dynamic_pointer_cast<const core::AbstractJoinNode>(planNode)) {
-    toSubstrait(arena, joinNode, rel->mutable_join());
+          std::dynamic_pointer_cast<const core::HashJoinNode>(planNode)) {
+    auto hashJoinRel = rel->mutable_hashjoin();
+    toSubstrait(arena, joinNode, hashJoinRel);
+    hashJoinRel->set_type(hashJoin::toProto(joinNode->joinType()));
+    return;
+  }
+  if (auto joinNode =
+          std::dynamic_pointer_cast<const core::MergeJoinNode>(planNode)) {
+    auto mergeJoinRel = rel->mutable_mergejoin();
+    toSubstrait(arena, joinNode, mergeJoinRel);
+    mergeJoinRel->set_type(mergeJoin::toProto(joinNode->joinType()));
     return;
   }
 }
@@ -350,10 +359,11 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
   aggregateRel->mutable_common()->mutable_direct();
 }
 
+template <class VeloxJoinNode, class SubstraitJoinRel>
 void VeloxToSubstraitPlanConvertor::toSubstrait(
     google::protobuf::Arena& arena,
-    const std::shared_ptr<const core::AbstractJoinNode>& joinNode,
-    ::substrait::JoinRel* joinRel) {
+    const std::shared_ptr<const VeloxJoinNode>& joinNode,
+    SubstraitJoinRel* joinRel) {
   std::vector<core::PlanNodePtr> sources = joinNode->sources();
   // JoinNode has exactly two input nodes.
   VELOX_USER_CHECK_EQ(
@@ -372,10 +382,6 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
             joinNode->leftKeys().at(i), joinNode->rightKeys().at(i)},
         "eq"));
   }
-
-  auto joinType = join::toProto(joinNode->joinType());
-  // Set the join type.
-  joinRel->set_type(joinType);
 
   auto joinExpression = joinCondition.size() == 1
       ? joinCondition.at(0)

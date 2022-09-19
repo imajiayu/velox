@@ -64,4 +64,97 @@ core::JoinType fromProto(::substrait::JoinRel_JoinType joinType) {
 
 } // namespace join
 
+namespace hashJoin {
+
+::substrait::HashJoinRel_JoinType toProto(core::JoinType joinType) {
+  switch (joinType) {
+    case core::JoinType::kInner:
+      return ::substrait::HashJoinRel_JoinType_JOIN_TYPE_INNER;
+    case core::JoinType::kLeft:
+      return ::substrait::HashJoinRel_JoinType_JOIN_TYPE_LEFT;
+    case core::JoinType::kRight:
+      return ::substrait::HashJoinRel_JoinType_JOIN_TYPE_RIGHT;
+    case core::JoinType::kFull:
+      return ::substrait::HashJoinRel_JoinType_JOIN_TYPE_OUTER;
+    case core::JoinType::kLeftSemi:
+      return ::substrait::HashJoinRel_JoinType_JOIN_TYPE_SEMI;
+    case core::JoinType::kRightSemi:
+      return ::substrait::HashJoinRel_JoinType_JOIN_TYPE_SEMI;
+    case core::JoinType::kAnti:
+      return ::substrait::HashJoinRel_JoinType_JOIN_TYPE_ANTI;
+    default:
+      VELOX_UNSUPPORTED(
+          "toProto not supported for velox hash join type, {}", joinType);
+  }
+}
+
+core::JoinType fromProto(::substrait::HashJoinRel_JoinType joinType) {
+  switch (joinType) {
+    case ::substrait::HashJoinRel_JoinType_JOIN_TYPE_INNER:
+      return core::JoinType::kInner;
+    case ::substrait::HashJoinRel_JoinType_JOIN_TYPE_LEFT:
+      return core::JoinType::kLeft;
+    case ::substrait::HashJoinRel_JoinType_JOIN_TYPE_RIGHT:
+      return core::JoinType::kRight;
+    case ::substrait::HashJoinRel_JoinType_JOIN_TYPE_OUTER:
+      return core::JoinType::kFull;
+    case ::substrait::HashJoinRel_JoinType_JOIN_TYPE_SEMI:
+      return core::JoinType::kLeftSemi;
+    case ::substrait::HashJoinRel_JoinType_JOIN_TYPE_ANTI:
+      return core::JoinType::kAnti;
+    default:
+      VELOX_UNSUPPORTED(
+          "fromProto not supported for substrait hash join type, {}", joinType);
+  }
+}
+
+} // namespace hashJoin
+
+namespace mergeJoin {
+
+::substrait::MergeJoinRel_JoinType toProto(core::JoinType joinType) {
+  switch (joinType) {
+    case core::JoinType::kInner:
+      return ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_INNER;
+    case core::JoinType::kLeft:
+      return ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_LEFT;
+    case core::JoinType::kRight:
+      return ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_RIGHT;
+    case core::JoinType::kFull:
+      return ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_OUTER;
+    case core::JoinType::kLeftSemi:
+      return ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_SEMI;
+    case core::JoinType::kRightSemi:
+      return ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_SEMI;
+    case core::JoinType::kAnti:
+      return ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_ANTI;
+    default:
+      VELOX_UNSUPPORTED(
+          "toProto not supported for velox merge join type, {}", joinType);
+  }
+}
+
+core::JoinType fromProto(::substrait::MergeJoinRel_JoinType joinType) {
+  switch (joinType) {
+    case ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_INNER:
+      return core::JoinType::kInner;
+    case ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_LEFT:
+      return core::JoinType::kLeft;
+    case ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_RIGHT:
+      return core::JoinType::kRight;
+    case ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_OUTER:
+      return core::JoinType::kFull;
+    case ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_SEMI:
+      return core::JoinType::kLeftSemi;
+    case ::substrait::MergeJoinRel_JoinType_JOIN_TYPE_ANTI:
+      return core::JoinType::kAnti;
+    default:
+      VELOX_UNSUPPORTED(
+          "fromProto not supported for substrait merge join type, {}",
+          joinType);
+  }
+}
+
+} // namespace mergeJoin
+
 } // namespace facebook::velox::substrait

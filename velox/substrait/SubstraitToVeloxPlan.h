@@ -18,6 +18,7 @@
 
 #include "velox/connectors/hive/HiveConnector.h"
 #include "velox/core/PlanNode.h"
+#include "velox/substrait/JoinUtils.h"
 #include "velox/substrait/SubstraitToVeloxExpr.h"
 
 namespace facebook::velox::substrait {
@@ -83,8 +84,11 @@ class SubstraitVeloxPlanConverter {
       memory::MemoryPool* pool);
 
   /// Convert Substtrait JoinRel into Velox Join Node.
+  template <class SubstraitJoinRel>
   core::PlanNodePtr toVeloxPlan(
-      const ::substrait::JoinRel& root,
+      const SubstraitJoinRel& root,
+      const core::JoinType joinType,
+      const SubstraitJoinKind joinKind,
       memory::MemoryPool* pool);
 
   /// Convert Substrait Plan into Velox PlanNode.

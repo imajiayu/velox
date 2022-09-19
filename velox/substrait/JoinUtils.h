@@ -21,6 +21,12 @@
 
 namespace facebook::velox::substrait {
 
+enum SubstraitJoinKind {
+  k_logicalJoin,
+  k_physicalHashJoin,
+  k_physicalMergeJoin,
+};
+
 namespace join {
 /// convert velox join type to substrait protocol join type
 ::substrait::JoinRel_JoinType toProto(core::JoinType joinType);
@@ -28,5 +34,21 @@ namespace join {
 /// convert substrait join type to velox join type
 core::JoinType fromProto(::substrait::JoinRel_JoinType joinType);
 } // namespace join
+
+namespace hashJoin {
+/// convert velox join type to substrait protocol join type
+::substrait::HashJoinRel_JoinType toProto(core::JoinType joinType);
+
+/// convert substrait join type to velox join type
+core::JoinType fromProto(::substrait::HashJoinRel_JoinType joinType);
+} // namespace hashJoin
+
+namespace mergeJoin {
+/// convert velox join type to substrait protocol join type
+::substrait::MergeJoinRel_JoinType toProto(core::JoinType joinType);
+
+/// convert substrait join type to velox join type
+core::JoinType fromProto(::substrait::MergeJoinRel_JoinType joinType);
+} // namespace mergeJoin
 
 } // namespace facebook::velox::substrait

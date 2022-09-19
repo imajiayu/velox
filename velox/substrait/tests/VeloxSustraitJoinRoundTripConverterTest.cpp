@@ -20,7 +20,6 @@
 #include "velox/exec/PlanNodeStats.h"
 #include "velox/exec/tests/utils/PlanBuilder.h"
 
-
 #include "velox/exec/tests/utils/OperatorTestBase.h"
 #include "velox/substrait/SubstraitToVeloxPlan.h"
 #include "velox/substrait/VeloxToSubstraitPlan.h"
@@ -32,7 +31,6 @@ using namespace facebook::velox::substrait;
 
 class VeloxSubstraitJoinRoundTripConverterTest : public OperatorTestBase {
  protected:
-
   static std::vector<std::string> concat(
       const std::vector<std::string>& a,
       const std::vector<std::string>& b) {
@@ -68,6 +66,7 @@ class VeloxSubstraitJoinRoundTripConverterTest : public OperatorTestBase {
       const std::vector<TypePtr>& keyTypes,
       int32_t leftSize,
       int32_t rightSize,
+      const core::JoinType joinType,
       const std::string& referenceQuery,
       const std::string& filter = "") {
     auto leftType = makeRowType(keyTypes, "t_");
@@ -80,16 +79,17 @@ class VeloxSubstraitJoinRoundTripConverterTest : public OperatorTestBase {
 
     auto planNodeIdGenerator = std::make_shared<PlanNodeIdGenerator>();
     auto planNode = PlanBuilder(planNodeIdGenerator)
-                          .values({leftBatch}, true)
-                          .hashJoin(
-                              makeKeyNames(keyTypes.size(), "t_"),
-                              makeKeyNames(keyTypes.size(), "u_"),
-                              PlanBuilder(planNodeIdGenerator)
-                                  .values({rightBatch}, true)
-                                  .planNode(),
-                              filter,
-                              concat(leftType->names(), rightType->names()))
-                          .planNode();
+                        .values({leftBatch}, true)
+                        .hashJoin(
+                            makeKeyNames(keyTypes.size(), "t_"),
+                            makeKeyNames(keyTypes.size(), "u_"),
+                            PlanBuilder(planNodeIdGenerator)
+                                .values({rightBatch}, true)
+                                .planNode(),
+                            filter,
+                            concat(leftType->names(), rightType->names()),
+                            joinType)
+                        .planNode();
 
     createDuckDbTable("t", {leftBatch});
     createDuckDbTable("u", {rightBatch});
@@ -120,12 +120,24 @@ class VeloxSubstraitJoinRoundTripConverterTest : public OperatorTestBase {
       std::make_shared<SubstraitVeloxPlanConverter>();
 };
 
-TEST_F(VeloxSubstraitJoinRoundTripConverterTest, bigintArray) {
+TEST_F(VeloxSubstraitJoinRoundTripConverterTest, innerJoin) {
   testJoin(
       {BIGINT()},
       16000,
       15000,
+      core::JoinType::kInner,
       "SELECT t_k0, t_data, u_k0, u_data FROM "
       "  t, u "
-      "  WHERE t_k0 = u_k0");
+      "  WHERE t_k0 = u_k0 AND ((t_k0 % 100) + (u_k0 % 100)) % 40 < 20",
+      "((t_k0 % 100) + (u_k0 % 100)) % 40 < 20");
+
+  testJoin(
+      {BIGINT()},
+      16000,
+      15000,
+      core::JoinType::kLeft,
+      "SELECT t_k0, t_data, u_k0, u_data FROM "
+      "  t let join  u  on t_k0= u_k0"
+      "  WHERE   ((t_k0 % 100) + (u_k0 % 100)) % 40 < 20",
+      "((t_k0 % 100) + (u_k0 % 100)) % 40 < 20");
 }

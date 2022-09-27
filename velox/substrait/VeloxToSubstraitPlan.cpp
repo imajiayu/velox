@@ -378,11 +378,10 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
   auto sourceInputTypes =
       sources[0]->outputType()->unionWith(sources[1]->outputType());
 
-  auto makeConjunction = [](const core::TypedExprPtr& left, const core::TypedExprPtr& right){
+  auto makeConjunction = [](const core::TypedExprPtr& left,
+                            const core::TypedExprPtr& right) {
     return std::make_shared<const core::CallTypedExpr>(
-        BOOLEAN(),
-        std::vector<core::TypedExprPtr>{left, right},
-        "and");
+        BOOLEAN(), std::vector<core::TypedExprPtr>{left, right}, "and");
   };
 
   core::TypedExprPtr joinExpression;
@@ -398,7 +397,6 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
   }
   joinRel->mutable_expression()->MergeFrom(
       exprConvertor_->toSubstraitExpr(arena, joinExpression, sourceInputTypes));
-
 
   if (joinNode->filter()) {
     // Set the join filter.

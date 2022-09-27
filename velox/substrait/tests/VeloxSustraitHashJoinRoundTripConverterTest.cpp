@@ -79,16 +79,16 @@ class VeloxSubstraitJoinRoundTripConverterTest : public OperatorTestBase {
     auto planNodeIdGenerator = std::make_shared<PlanNodeIdGenerator>();
 
     auto planNode = PlanBuilder(planNodeIdGenerator)
-                          .values({leftBatch})
-                          .hashJoin(
-                              makeKeyNames(keyTypes.size(), "t_"),
-                              makeKeyNames(keyTypes.size(), "u_"),
-                              PlanBuilder(planNodeIdGenerator)
-                                  .values({rightBatch})
-                                  .planNode(),
-                              filter,
-                              concat(leftType->names(), rightType->names()))
-                          .planNode();
+                        .values({leftBatch})
+                        .hashJoin(
+                            makeKeyNames(keyTypes.size(), "t_"),
+                            makeKeyNames(keyTypes.size(), "u_"),
+                            PlanBuilder(planNodeIdGenerator)
+                                .values({rightBatch})
+                                .planNode(),
+                            filter,
+                            concat(leftType->names(), rightType->names()))
+                        .planNode();
 
     createDuckDbTable("t", {leftBatch});
     createDuckDbTable("u", {rightBatch});
@@ -120,7 +120,6 @@ class VeloxSubstraitJoinRoundTripConverterTest : public OperatorTestBase {
       std::make_shared<SubstraitVeloxPlanConverter>();
 };
 
-
 TEST_F(VeloxSubstraitJoinRoundTripConverterTest, bigintArray) {
   testJoin(
       {BIGINT()},
@@ -142,7 +141,6 @@ TEST_F(VeloxSubstraitJoinRoundTripConverterTest, emptyBuild) {
 }
 
 TEST_F(VeloxSubstraitJoinRoundTripConverterTest, normalizedKey) {
-
   testJoin(
       {INTEGER(), INTEGER(), INTEGER()},
       16000,

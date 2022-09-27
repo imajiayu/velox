@@ -82,12 +82,11 @@ class VeloxToSubstraitPlanConvertor {
       const std::shared_ptr<const core::AggregationNode>& aggregateNode,
       ::substrait::AggregateRel* aggregateRel);
 
-  /// Convert Velox HashJoin Node into Substrait HashJoinRel
-  template<class VeloxJoinNode, class SubstraitJoinRel>
+  /// Convert Velox HashJoin Node into Substrait JoinRel.
   void toSubstrait(
       google::protobuf::Arena& arena,
-      const std::shared_ptr<const VeloxJoinNode>& JoinNode,
-      SubstraitJoinRel* joinRel);
+      const std::shared_ptr<const core::HashJoinNode> joinNode,
+      ::substrait::JoinRel* joinRel);
 
   /// The Expression converter used to convert Velox representations into
   /// Substrait expressions.

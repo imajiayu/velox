@@ -144,16 +144,9 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
   }
   if (auto joinNode =
           std::dynamic_pointer_cast<const core::HashJoinNode>(planNode)) {
-    auto hashJoinRel = rel->mutable_hashjoin();
+    auto hashJoinRel = rel->mutable_join();
     toSubstrait(arena, joinNode, hashJoinRel);
-    hashJoinRel->set_type(hashJoin::toProto(joinNode->joinType()));
-    return;
-  }
-  if (auto joinNode =
-          std::dynamic_pointer_cast<const core::MergeJoinNode>(planNode)) {
-    auto mergeJoinRel = rel->mutable_mergejoin();
-    toSubstrait(arena, joinNode, mergeJoinRel);
-    mergeJoinRel->set_type(mergeJoin::toProto(joinNode->joinType()));
+    hashJoinRel->set_type(join::toProto(joinNode->joinType()));
     return;
   }
 }
@@ -359,12 +352,11 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
   aggregateRel->mutable_common()->mutable_direct();
 }
 
-template <class VeloxJoinNode, class SubstraitJoinRel>
 void VeloxToSubstraitPlanConvertor::toSubstrait(
     google::protobuf::Arena& arena,
-    const std::shared_ptr<const VeloxJoinNode>& joinNode,
-    SubstraitJoinRel* joinRel) {
-  std::vector<core::PlanNodePtr> sources = joinNode->sources();
+    const std::shared_ptr<const core::HashJoinNode> joinNode,
+    ::substrait::JoinRel* joinRel) {
+  const auto& sources = joinNode->sources();
   // JoinNode has exactly two input nodes.
   VELOX_USER_CHECK_EQ(
       2, sources.size(), "Join plan node must have exactly two sources.");
@@ -383,17 +375,36 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
         "eq"));
   }
 
-  auto joinExpression = joinCondition.size() == 1
-      ? joinCondition.at(0)
-      : std::make_shared<core::CallTypedExpr>(BOOLEAN(), joinCondition, "and");
-  joinRel->mutable_expression()->MergeFrom(exprConvertor_->toSubstraitExpr(
-      arena, joinExpression, joinNode->outputType()));
+  auto sourceInputTypes =
+      sources[0]->outputType()->unionWith(sources[1]->outputType());
+
+  auto makeConjunction = [](const core::TypedExprPtr& left, const core::TypedExprPtr& right){
+    return std::make_shared<const core::CallTypedExpr>(
+        BOOLEAN(),
+        std::vector<core::TypedExprPtr>{left, right},
+        "and");
+  };
+
+  core::TypedExprPtr joinExpression;
+  if (joinCondition.size() == 1) {
+    joinExpression = joinCondition.at(0);
+  } else {
+    joinExpression = makeConjunction(joinCondition.at(0), joinCondition.at(1));
+    if (joinCondition.size() > 2) {
+      for (auto i = 2; i < joinCondition.size(); i++) {
+        joinExpression = makeConjunction(joinCondition.at(i), joinExpression);
+      }
+    }
+  }
+  joinRel->mutable_expression()->MergeFrom(
+      exprConvertor_->toSubstraitExpr(arena, joinExpression, sourceInputTypes));
+
 
   if (joinNode->filter()) {
     // Set the join filter.
     joinRel->mutable_post_join_filter()->MergeFrom(
         exprConvertor_->toSubstraitExpr(
-            arena, joinNode->filter(), joinNode->outputType()));
+            arena, joinNode->filter(), sourceInputTypes));
   }
   joinRel->mutable_common()->mutable_direct();
 }

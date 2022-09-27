@@ -73,12 +73,21 @@ SubstraitVeloxExprConverter::toVeloxExpr(
     case ::substrait::Expression_Literal::LiteralTypeCase::kBoolean:
       return std::make_shared<core::ConstantTypedExpr>(
           variant(substraitLit.boolean()));
+    case ::substrait::Expression_Literal::LiteralTypeCase::kI8:
+      return std::make_shared<core::ConstantTypedExpr>(
+          variant(substraitLit.i8()));
+    case ::substrait::Expression_Literal::LiteralTypeCase::kI16:
+      return std::make_shared<core::ConstantTypedExpr>(
+          variant(substraitLit.i16()));
     case ::substrait::Expression_Literal::LiteralTypeCase::kI32:
       return std::make_shared<core::ConstantTypedExpr>(
           variant(substraitLit.i32()));
     case ::substrait::Expression_Literal::LiteralTypeCase::kI64:
       return std::make_shared<core::ConstantTypedExpr>(
           variant(substraitLit.i64()));
+    case ::substrait::Expression_Literal::LiteralTypeCase::kFp32:
+      return std::make_shared<core::ConstantTypedExpr>(
+          variant(substraitLit.fp32()));
     case ::substrait::Expression_Literal::LiteralTypeCase::kFp64:
       return std::make_shared<core::ConstantTypedExpr>(
           variant(substraitLit.fp64()));

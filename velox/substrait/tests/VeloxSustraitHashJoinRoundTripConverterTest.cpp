@@ -276,45 +276,6 @@ TEST_F(VeloxSubstraitJoinRoundTripConverterTest, leftSemiJoin) {
       op, "SELECT t.c1 FROM t WHERE t.c0 IN (SELECT c0 FROM u)");
 }
 
-TEST_F(VeloxSubstraitJoinRoundTripConverterTest, rightSemiJoin) {
-  // leftVector size is greater than rightVector size.
-  auto leftVectors = makeRowVector(
-      {"u0", "u1"},
-      {
-          makeFlatVector<int32_t>(
-              1'234, [](auto row) { return row % 11; }, nullEvery(13)),
-          makeFlatVector<int32_t>(1'234, [](auto row) { return row; }),
-      });
-
-  auto rightVectors = makeRowVector(
-      {"t0", "t1"},
-      {
-          makeFlatVector<int32_t>(
-              123, [](auto row) { return row % 5; }, nullEvery(7)),
-          makeFlatVector<int32_t>(123, [](auto row) { return row; }),
-      });
-
-  createDuckDbTable("u", {leftVectors});
-  createDuckDbTable("t", {rightVectors});
-
-  auto planNodeIdGenerator = std::make_shared<PlanNodeIdGenerator>();
-  auto op = PlanBuilder(planNodeIdGenerator)
-                .values({leftVectors})
-                .hashJoin(
-                    {"u0"},
-                    {"t0"},
-                    PlanBuilder(planNodeIdGenerator)
-                        .values({rightVectors})
-                        .planNode(),
-                    "",
-                    {"t1"},
-                    core::JoinType::kRightSemi)
-                .planNode();
-
-  assertPlanConversion(
-      op, "SELECT t.t1 FROM t WHERE t.t0 IN (SELECT u0 FROM u)");
-}
-
 TEST_F(VeloxSubstraitJoinRoundTripConverterTest, fullJoin) {
   // Left side keys are [0, 1, 2,..10].
   auto leftVectors = {

@@ -31,9 +31,7 @@ namespace join {
     case core::JoinType::kFull:
       return ::substrait::JoinRel_JoinType_JOIN_TYPE_OUTER;
     case core::JoinType::kLeftSemi:
-      return ::substrait::JoinRel_JoinType_JOIN_TYPE_LEFT_SEMI;
-    case core::JoinType::kRightSemi:
-      return ::substrait::JoinRel_JoinType_JOIN_TYPE_RIGHT_SEMI;
+      return ::substrait::JoinRel_JoinType_JOIN_TYPE_SEMI;
     case core::JoinType::kAnti:
       return ::substrait::JoinRel_JoinType_JOIN_TYPE_ANTI;
     default:
@@ -52,10 +50,8 @@ core::JoinType fromProto(::substrait::JoinRel_JoinType joinType) {
       return core::JoinType::kRight;
     case ::substrait::JoinRel_JoinType_JOIN_TYPE_OUTER:
       return core::JoinType::kFull;
-    case ::substrait::JoinRel_JoinType_JOIN_TYPE_LEFT_SEMI:
+    case ::substrait::JoinRel_JoinType_JOIN_TYPE_SEMI:
       return core::JoinType::kLeftSemi;
-    case ::substrait::JoinRel_JoinType_JOIN_TYPE_RIGHT_SEMI:
-      return core::JoinType::kRightSemi;
     case ::substrait::JoinRel_JoinType_JOIN_TYPE_ANTI:
       return core::JoinType::kAnti;
     default:

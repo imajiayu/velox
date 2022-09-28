@@ -34,7 +34,7 @@ SubstraitVeloxExprConverter::toVeloxExpr(
       const auto& inputNames = inputType->names();
       const int64_t inputSize = inputNames.size();
 
-      if (colIdx <= inputSize) {
+      if (colIdx < inputSize) {
         // Convert type to row.
         return std::make_shared<core::FieldAccessTypedExpr>(
             inputTypes[colIdx],

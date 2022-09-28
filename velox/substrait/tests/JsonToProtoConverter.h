@@ -28,4 +28,3 @@ class JsonToProtoConverter {
   /// Convert Protobuf message to Json.
   static std::string messageToJson(const google::protobuf::Message& message);
 };
-

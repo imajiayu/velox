@@ -422,6 +422,16 @@ folly::dynamic RowType::serialize() const {
   return obj;
 }
 
+std::shared_ptr<const RowType> RowType::unionWith(
+    std::shared_ptr<const RowType> rowType) const {
+  std::vector<std::string> names = this->names();
+  std::vector<TypePtr> types = this->children();
+  names.insert(names.end(), rowType->names().begin(), rowType->names().end());
+  types.insert(
+      types.end(), rowType->children().begin(), rowType->children().end());
+  return ROW(std::move(names), std::move(types));
+}
+
 size_t Type::hashKind() const {
   size_t hash = (int32_t)kind();
   for (auto& child : *this) {

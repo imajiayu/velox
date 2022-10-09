@@ -16,15 +16,17 @@
 
 #pragma once
 
-#include <google/protobuf/util/json_util.h>
+#include "velox/core/PlanNode.h"
+#include "velox/substrait/proto/substrait/algebra.pb.h"
 
-class JsonToProtoConverter {
- public:
-  /// Reconstruct Protobuf message from Json file.
-  static void readFromFile(
-      const std::string& msgPath,
-      google::protobuf::Message& msg);
+namespace facebook::velox::substrait {
 
-  /// Convert Protobuf message to Json.
-  static std::string messageToJson(const google::protobuf::Message& message);
-};
+namespace join {
+/// convert velox join type to substrait protocol join type
+::substrait::JoinRel_JoinType toProto(core::JoinType joinType);
+
+/// convert substrait join type to velox join type
+core::JoinType fromProto(::substrait::JoinRel_JoinType joinType);
+} // namespace join
+
+} // namespace facebook::velox::substrait

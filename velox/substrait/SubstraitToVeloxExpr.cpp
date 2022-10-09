@@ -34,7 +34,7 @@ SubstraitVeloxExprConverter::toVeloxExpr(
       const auto& inputNames = inputType->names();
       const int64_t inputSize = inputNames.size();
 
-      if (colIdx <= inputSize) {
+      if (colIdx < inputSize) {
         // Convert type to row.
         return std::make_shared<core::FieldAccessTypedExpr>(
             inputTypes[colIdx],
@@ -76,24 +76,36 @@ SubstraitVeloxExprConverter::toVeloxExpr(
     case ::substrait::Expression_Literal::LiteralTypeCase::kBoolean:
       return std::make_shared<core::ConstantTypedExpr>(
           variant(substraitLit.boolean()));
+    case ::substrait::Expression_Literal::LiteralTypeCase::kI8:
+      return std::make_shared<core::ConstantTypedExpr>(
+          variant(substraitLit.i8()));
+    case ::substrait::Expression_Literal::LiteralTypeCase::kI16:
+      return std::make_shared<core::ConstantTypedExpr>(
+          variant(substraitLit.i16()));
     case ::substrait::Expression_Literal::LiteralTypeCase::kI32:
       return std::make_shared<core::ConstantTypedExpr>(
           variant(substraitLit.i32()));
     case ::substrait::Expression_Literal::LiteralTypeCase::kI64:
       return std::make_shared<core::ConstantTypedExpr>(
           variant(substraitLit.i64()));
+    case ::substrait::Expression_Literal::LiteralTypeCase::kFp32:
+      return std::make_shared<core::ConstantTypedExpr>(
+          variant(substraitLit.fp32()));
     case ::substrait::Expression_Literal::LiteralTypeCase::kFp64:
       return std::make_shared<core::ConstantTypedExpr>(
           variant(substraitLit.fp64()));
-    case ::substrait::Expression_Literal::LiteralTypeCase::kVarChar:
+    case ::substrait::Expression_Literal::LiteralTypeCase::kString:
       return std::make_shared<core::ConstantTypedExpr>(
-          variant(substraitLit.var_char().value()));
+          variant(substraitLit.string()));
     case ::substrait::Expression_Literal::LiteralTypeCase::kNull: {
       auto veloxType =
           toVeloxType(substraitParser_.parseType(substraitLit.null())->type);
       return std::make_shared<core::ConstantTypedExpr>(
           veloxType, variant::null(veloxType->kind()));
     }
+    case ::substrait::Expression_Literal::LiteralTypeCase::kVarChar:
+      return std::make_shared<core::ConstantTypedExpr>(
+          variant(substraitLit.var_char().value()));
     default:
       VELOX_NYI(
           "Substrait conversion not supported for type case '{}'", typeCase);

@@ -209,7 +209,7 @@ void VeloxToSubstraitExprConvertor::complexVectorToLiteral(
     VELOX_CHECK_EQ(arrayVector->size(), 1, "Only one array is expected.");
     if (constantVector->isNullAt(0)) {
       // Process the null value.
-      substraitLiteral->MergeFrom(exprConvertor_->toSubstraitNullLiteral(   arena, arrayVector->type()->kind()));
+      substraitLiteral->MergeFrom(exprConvertor_->toSubstraitNullLiteral(arena, arrayVector->type()->kind()));
     } else {
       ::substrait::Expression_Literal_List* listLiteral =
           google::protobuf::Arena::CreateMessage<

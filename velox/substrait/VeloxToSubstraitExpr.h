@@ -100,18 +100,19 @@ class VeloxToSubstraitExprConvertor {
 
   const VeloxToSubstraitTypeConvertorPtr typeConvertor_;
 
-/// Convert values in Velox flat vector to Substrait List Literal.
+  /// Convert values in Velox flat vector to Substrait List Literal.
   template <TypeKind flatKind>
-  void flatVectorToListLiteral(google::protobuf::Arena& arena,
+  void flatVectorToListLiteral(
+      google::protobuf::Arena& arena,
       const velox::VectorPtr& vector,
       ::substrait::Expression_Literal_List* listLiteral);
 
-    /// Convert values in Velox complex vector to Substrait Literal.
+  /// Convert values in Velox complex vector to Substrait Literal.
   void complexVectorToLiteral(
       google::protobuf::Arena& arena,
       std::shared_ptr<velox::ConstantVector<velox::ComplexType>> constantVector,
       ::substrait::Expression_Literal* substraitLiteral);
-      
+
   const std::vector<VeloxToSubstraitCallConverterPtr> callConverters_;
 };
 

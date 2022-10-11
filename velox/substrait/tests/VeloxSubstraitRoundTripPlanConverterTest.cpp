@@ -98,13 +98,14 @@ TEST_F(VeloxSubstraitRoundTripPlanConverterTest, filter) {
 TEST_F(VeloxSubstraitRoundTripPlanConverterTest, scalarFunc_string_test) {
   std::vector<RowVectorPtr> vectors;
   vectors.reserve(1);
-  auto dow = makeFlatVector<std::string>({"monday",
-                                          "tuesday",
-                                          "wednesday",
-                                          "thursday",
-                                          "friday",
-                                          "saturday",
-                                          "sunday"});
+  auto dow = makeFlatVector<std::string>(
+      {"monday",
+       "tuesday",
+       "wednesday",
+       "thursday",
+       "friday",
+       "saturday",
+       "sunday"});
   auto rowVector = makeRowVector({"dow"}, {dow});
   vectors.emplace_back(rowVector);
   createDuckDbTable(vectors);
@@ -310,13 +311,12 @@ TEST_F(VeloxSubstraitRoundTripPlanConverterTest, arrayLiteral) {
                   .values({vectors})
                   .project({"array[0, 1, 2, 3, 4]"})
                   .planNode();
-  //TODO: enable this after velox updated to the latest 20221011
-  //assertQuery(plan, "SELECT array[0, 1, 2, 3, 4]");
+  // TODO: enable this after velox updated to the latest 20221011
+  // assertQuery(plan, "SELECT array[0, 1, 2, 3, 4]");
 
   // Convert Velox Plan to Substrait Plan.
   google::protobuf::Arena arena;
   auto substraitPlan = veloxConvertor_->toSubstrait(arena, plan);
-
 }
 
 int main(int argc, char** argv) {

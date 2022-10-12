@@ -305,6 +305,20 @@ TEST_F(VeloxSubstraitRoundTripPlanConverterTest, coalesce) {
   assertPlanConversion(plan, "SELECT coalesce(c0,c1)   FROM tmp");
 }
 
+TEST_F(VeloxSubstraitRoundTripPlanConverterTest, arrayLiteral) {
+  auto vectors = makeRowVector(ROW({}, {}), 1);
+  auto plan = PlanBuilder(pool_.get())
+                  .values({vectors})
+                  .project({"array[0, 1, 2, 3, 4]"})
+                  .planNode();
+  // TODO: enable this after velox updated to the latest 20221011
+  // assertQuery(plan, "SELECT array[0, 1, 2, 3, 4]");
+
+  // Convert Velox Plan to Substrait Plan.
+  google::protobuf::Arena arena;
+  auto substraitPlan = veloxConvertor_->toSubstrait(arena, plan);
+}
+
 int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
   folly::init(&argc, &argv, false);

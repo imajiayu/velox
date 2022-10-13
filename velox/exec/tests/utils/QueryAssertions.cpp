@@ -448,7 +448,11 @@ std::vector<MaterializedRow> materialize(const RowVectorPtr& vector) {
       } else {
         auto value = VELOX_DYNAMIC_SCALAR_TYPE_DISPATCH(
             variantAt, typeKind, vector->childAt(j), i);
-        row.push_back(value);
+        if (value.isNull()) {
+          row.push_back(variant(typeKind));
+        } else {
+          row.push_back(value);
+        }
       }
     }
     rows.push_back(row);

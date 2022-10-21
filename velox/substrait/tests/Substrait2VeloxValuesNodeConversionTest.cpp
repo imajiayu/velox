@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-#include "velox/substrait/tests/JsonToProtoConverter.h"
-
-#include "velox/common/base/tests/Fs.h"
 #include "velox/dwio/common/tests/utils/DataFiles.h"
 #include "velox/exec/tests/utils/OperatorTestBase.h"
 #include "velox/exec/tests/utils/PlanBuilder.h"
+#include "velox/substrait/tests/JsonToProtoConverter.h"
 #include "velox/vector/tests/utils/VectorTestBase.h"
 
 #include "velox/substrait/SubstraitToVeloxPlan.h"
@@ -31,9 +29,7 @@ using namespace facebook::velox::exec::test;
 using namespace facebook::velox::substrait;
 
 class Substrait2VeloxValuesNodeConversionTest : public OperatorTestBase {
- public:
-  std::unique_ptr<memory::ScopedMemoryPool> pool_{
-      memory::getDefaultScopedMemoryPool()};
+ protected:
   std::shared_ptr<SubstraitVeloxPlanConverter> planConverter_ =
       std::make_shared<SubstraitVeloxPlanConverter>(pool_.get());
 };

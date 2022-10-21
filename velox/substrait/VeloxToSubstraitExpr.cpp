@@ -177,7 +177,7 @@ const ::substrait::Expression& VeloxToSubstraitExprConvertor::toSubstraitExpr(
     }
   }
 
-  VELOX_NYI("Unsupported function name '{}'", callTypeExpr->name());
+  return *substraitExpr;
 }
 
 const ::substrait::Expression_Literal&
@@ -308,6 +308,30 @@ VeloxToSubstraitExprConvertor::toSubstraitNotNullLiteral(
       google::protobuf::Arena::CreateMessage<::substrait::Expression_Literal>(
           &arena);
   switch (variantValue.kind()) {
+    case velox::TypeKind::BOOLEAN: {
+      literalExpr->set_boolean(variantValue.value<TypeKind::BOOLEAN>());
+      break;
+    }
+    case velox::TypeKind::TINYINT: {
+      literalExpr->set_i8(variantValue.value<TypeKind::TINYINT>());
+      break;
+    }
+    case velox::TypeKind::SMALLINT: {
+      literalExpr->set_i16(variantValue.value<TypeKind::SMALLINT>());
+      break;
+    }
+    case velox::TypeKind::INTEGER: {
+      literalExpr->set_i32(variantValue.value<TypeKind::INTEGER>());
+      break;
+    }
+    case velox::TypeKind::BIGINT: {
+      literalExpr->set_i64(variantValue.value<TypeKind::BIGINT>());
+      break;
+    }
+    case velox::TypeKind::REAL: {
+      literalExpr->set_fp32(variantValue.value<TypeKind::REAL>());
+      break;
+    }
     case velox::TypeKind::DOUBLE: {
       literalExpr->set_fp64(variantValue.value<TypeKind::DOUBLE>());
       break;
@@ -319,30 +343,6 @@ VeloxToSubstraitExprConvertor::toSubstraitNotNullLiteral(
       sVarChar->set_value(vCharValue.data());
       sVarChar->set_length(vCharValue.size());
       literalExpr->set_allocated_var_char(sVarChar);
-      break;
-    }
-    case velox::TypeKind::BIGINT: {
-      literalExpr->set_i64(variantValue.value<TypeKind::BIGINT>());
-      break;
-    }
-    case velox::TypeKind::INTEGER: {
-      literalExpr->set_i32(variantValue.value<TypeKind::INTEGER>());
-      break;
-    }
-    case velox::TypeKind::SMALLINT: {
-      literalExpr->set_i16(variantValue.value<TypeKind::SMALLINT>());
-      break;
-    }
-    case velox::TypeKind::TINYINT: {
-      literalExpr->set_i8(variantValue.value<TypeKind::TINYINT>());
-      break;
-    }
-    case velox::TypeKind::BOOLEAN: {
-      literalExpr->set_boolean(variantValue.value<TypeKind::BOOLEAN>());
-      break;
-    }
-    case velox::TypeKind::REAL: {
-      literalExpr->set_fp32(variantValue.value<TypeKind::REAL>());
       break;
     }
     case velox::TypeKind::TIMESTAMP: {

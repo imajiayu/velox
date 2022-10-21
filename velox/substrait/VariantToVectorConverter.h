@@ -13,29 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
 
-#include "velox/substrait/SubstraitTypeLookup.h"
+#include "velox/vector/BaseVector.h"
 
 namespace facebook::velox::substrait {
 
-SubstraitTypeLookup::SubstraitTypeLookup(
-    const std::vector<SubstraitTypeAnchorPtr>& types) {
-  for (auto& typeAnchor : types) {
-    signatures_.insert({typeAnchor->name, typeAnchor});
-  }
-}
-
-std::optional<SubstraitTypeAnchorPtr> SubstraitTypeLookup::lookupType(
-    const std::string& typeName) const {
-  if (signatures_.find(typeName) != signatures_.end()) {
-    return std::make_optional(signatures_.at(typeName));
-  }
-  return std::nullopt;
-}
-
-std::optional<SubstraitTypeAnchorPtr> SubstraitTypeLookup::lookupUnknownType()
-    const {
-  return lookupType("unknown");
-}
+/// Create Base Vector from velox variants.
+/// Only scalar types are supported except VARBINARY.
+VectorPtr setVectorFromVariants(
+    const TypePtr& type,
+    const std::vector<velox::variant>& values,
+    velox::memory::MemoryPool* pool);
 
 } // namespace facebook::velox::substrait

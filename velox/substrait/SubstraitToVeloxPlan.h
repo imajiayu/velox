@@ -75,8 +75,7 @@ class SubstraitVeloxPlanConverter {
 
   /// Convert Substrait JoinRel into Velox PlanNode.
   core::PlanNodePtr toVeloxPlan(
-      const ::substrait::JoinRel& sJoin,
-      memory::MemoryPool* pool);
+      const ::substrait::JoinRel& sJoin);
 
   /// Convert Substrait Plan into Velox PlanNode.
   core::PlanNodePtr toVeloxPlan(const ::substrait::Plan& substraitPlan);

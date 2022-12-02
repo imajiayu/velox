@@ -36,7 +36,7 @@ namespace {
       return ::substrait::AGGREGATION_PHASE_INTERMEDIATE_TO_RESULT;
     }
     default:
-      VELOX_NYI(
+      VELOX_UNSUPPORTED(
           "Unsupported Aggregate Step '{}' in Substrait ",
           mapAggregationStepToName(step));
   }
@@ -53,7 +53,8 @@ namespace {
   } else if (!sortOrder.isNullsFirst() && !sortOrder.isAscending()) {
     return ::substrait::SortField_SortDirection_SORT_DIRECTION_DESC_NULLS_LAST;
   } else {
-    VELOX_NYI("SortOrder '{}' is not supported yet.", sortOrder.toString());
+    VELOX_UNSUPPORTED(
+        "SortOrder '{}' is not supported yet.", sortOrder.toString());
   }
 }
 

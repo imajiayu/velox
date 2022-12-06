@@ -73,6 +73,31 @@ class VeloxToSubstraitPlanConvertor {
       const std::shared_ptr<const core::AggregationNode>& aggregateNode,
       ::substrait::AggregateRel* aggregateRel);
 
+  /// Convert Velox OrderBy Node into Substrait SortRel.
+  void toSubstrait(
+      google::protobuf::Arena& arena,
+      const std::shared_ptr<const core::OrderByNode>& orderByNode,
+      ::substrait::SortRel* sortRel);
+
+  /// Convert Velox TopN Node into Substrait SortRel->FetchRel.
+  void toSubstrait(
+      google::protobuf::Arena& arena,
+      const std::shared_ptr<const core::TopNNode>& topNNode,
+      ::substrait::FetchRel* fetchRel);
+
+  /// Helper function to process sortingKeys and sortingOrders.
+  const ::substrait::SortRel& processSortFields(
+      google::protobuf::Arena& arena,
+      const std::vector<core::FieldAccessTypedExprPtr>& sortingKeys,
+      const std::vector<core::SortOrder>& sortingOrders,
+      const RowTypePtr& inputType);
+
+  /// Convert Velox Limit Node into Substrait FetchRel.
+  void toSubstrait(
+      google::protobuf::Arena& arena,
+      const std::shared_ptr<const core::LimitNode>& limitNode,
+      ::substrait::FetchRel* fetchRel);
+
   /// Convert Velox HashJoin Node into Substrait JoinRel.
   void toSubstraitJoin(
       google::protobuf::Arena& arena,

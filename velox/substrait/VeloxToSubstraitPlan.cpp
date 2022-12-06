@@ -36,9 +36,25 @@ namespace {
       return ::substrait::AGGREGATION_PHASE_INTERMEDIATE_TO_RESULT;
     }
     default:
-      VELOX_NYI(
+      VELOX_UNSUPPORTED(
           "Unsupported Aggregate Step '{}' in Substrait ",
           mapAggregationStepToName(step));
+  }
+}
+
+::substrait::SortField_SortDirection toSortDirection(
+    core::SortOrder sortOrder) {
+  if (sortOrder.isNullsFirst() && sortOrder.isAscending()) {
+    return ::substrait::SortField_SortDirection_SORT_DIRECTION_ASC_NULLS_FIRST;
+  } else if (sortOrder.isNullsFirst() && !sortOrder.isAscending()) {
+    return ::substrait::SortField_SortDirection_SORT_DIRECTION_DESC_NULLS_FIRST;
+  } else if (!sortOrder.isNullsFirst() && sortOrder.isAscending()) {
+    return ::substrait::SortField_SortDirection_SORT_DIRECTION_ASC_NULLS_LAST;
+  } else if (!sortOrder.isNullsFirst() && !sortOrder.isAscending()) {
+    return ::substrait::SortField_SortDirection_SORT_DIRECTION_DESC_NULLS_LAST;
+  } else {
+    VELOX_UNSUPPORTED(
+        "SortOrder '{}' is not supported yet.", sortOrder.toString());
   }
 }
 
@@ -107,6 +123,22 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
   if (auto joinNode =
           std::dynamic_pointer_cast<const core::HashJoinNode>(planNode)) {
     toSubstraitJoin(arena, joinNode, rel);
+    return;
+  }
+  if (auto orderbyNode =
+          std::dynamic_pointer_cast<const core::OrderByNode>(planNode)) {
+    toSubstrait(arena, orderbyNode, rel->mutable_sort());
+    return;
+  }
+  if (auto topNNode =
+          std::dynamic_pointer_cast<const core::TopNNode>(planNode)) {
+    // Convert it to fetchRel->sortRel.
+    toSubstrait(arena, topNNode, rel->mutable_fetch());
+    return;
+  }
+  if (auto limitNode =
+          std::dynamic_pointer_cast<const core::LimitNode>(planNode)) {
+    toSubstrait(arena, limitNode, rel->mutable_fetch());
     return;
   }
 }
@@ -306,6 +338,107 @@ void VeloxToSubstraitPlanConvertor::toSubstrait(
 
   // Direct output.
   aggregateRel->mutable_common()->mutable_direct();
+}
+
+void VeloxToSubstraitPlanConvertor::toSubstrait(
+    google::protobuf::Arena& arena,
+    const std::shared_ptr<const core::OrderByNode>& orderByNode,
+    ::substrait::SortRel* sortRel) {
+  std::vector<core::PlanNodePtr> sources = orderByNode->sources();
+
+  // Check there only have one input.
+  VELOX_USER_CHECK_EQ(
+      1, sources.size(), "OrderBy plan node must have exactly one source.");
+
+  const auto& source = sources[0];
+
+  // Build source.
+  toSubstrait(arena, source, sortRel->mutable_input());
+
+  // Process sortingKeys and sortingOrders.
+  sortRel->MergeFrom(processSortFields(
+      arena,
+      orderByNode->sortingKeys(),
+      orderByNode->sortingOrders(),
+      source->outputType()));
+
+  sortRel->set_is_partial(orderByNode->isPartial());
+  sortRel->mutable_common()->mutable_direct();
+}
+
+void VeloxToSubstraitPlanConvertor::toSubstrait(
+    google::protobuf::Arena& arena,
+    const std::shared_ptr<const core::TopNNode>& topNNode,
+    ::substrait::FetchRel* fetchRel) {
+  std::vector<core::PlanNodePtr> sources = topNNode->sources();
+  // Convert it to be fetchRel->SortRel.
+  //  Check there only have one input.
+  VELOX_USER_CHECK_EQ(
+      1, sources.size(), "Top-N plan node must have exactly one source.");
+  const auto& source = sources[0];
+
+  // Construct the sortRel as the FetchRel input.
+  ::substrait::SortRel* sortRel = fetchRel->mutable_input()->mutable_sort();
+
+  // Build source.
+  toSubstrait(arena, source, sortRel->mutable_input());
+
+  sortRel->MergeFrom(processSortFields(
+      arena,
+      topNNode->sortingKeys(),
+      topNNode->sortingOrders(),
+      source->outputType()));
+
+  sortRel->set_is_partial(topNNode->isPartial());
+  sortRel->mutable_common()->mutable_direct();
+
+  fetchRel->set_is_partial(topNNode->isPartial());
+  fetchRel->set_count(topNNode->count());
+  fetchRel->mutable_common()->mutable_direct();
+}
+
+const ::substrait::SortRel& VeloxToSubstraitPlanConvertor::processSortFields(
+    google::protobuf::Arena& arena,
+    const std::vector<core::FieldAccessTypedExprPtr>& sortingKeys,
+    const std::vector<core::SortOrder>& sortingOrders,
+    const facebook::velox::RowTypePtr& inputType) {
+  ::substrait::SortRel* sortRel =
+      google::protobuf::Arena::CreateMessage<::substrait::SortRel>(&arena);
+
+  VELOX_CHECK_EQ(
+      sortingKeys.size(),
+      sortingOrders.size(),
+      "Number of sorting keys and sorting orders must be the same");
+
+  for (int64_t i = 0; i < sortingKeys.size(); i++) {
+    ::substrait::SortField* sortField = sortRel->add_sorts();
+    sortField->mutable_expr()->MergeFrom(exprConvertor_->toSubstraitExpr(
+        arena,
+        std::dynamic_pointer_cast<const core::ITypedExpr>(sortingKeys[i]),
+        inputType));
+
+    sortField->set_direction(toSortDirection(sortingOrders[i]));
+  }
+  return *sortRel;
+}
+
+void VeloxToSubstraitPlanConvertor::toSubstrait(
+    google::protobuf::Arena& arena,
+    const std::shared_ptr<const core::LimitNode>& limitNode,
+    ::substrait::FetchRel* fetchRel) {
+  std::vector<core::PlanNodePtr> sources = limitNode->sources();
+
+  // Check there only have one input.
+  VELOX_USER_CHECK_EQ(
+      1, sources.size(), "Limit plan node must have exactly one source.");
+
+  // Build source.
+  toSubstrait(arena, sources[0], fetchRel->mutable_input());
+
+  fetchRel->set_offset(limitNode->offset());
+  fetchRel->set_count(limitNode->count());
+  fetchRel->set_is_partial(limitNode->isPartial());
+  fetchRel->mutable_common()->mutable_direct();
 }
 
 void VeloxToSubstraitPlanConvertor::toSubstraitJoin(

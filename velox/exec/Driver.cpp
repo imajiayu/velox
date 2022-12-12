@@ -350,7 +350,7 @@ StopReason Driver::runInternal(
             {
               auto timer = cpuWallTimer(op->stats().getOutputTiming);
               result = op->getOutput();
-              if (result) {
+              if (result && result->size() > 0) {
                 VELOX_CHECK(
                     result->size() > 0,
                     "Operator::getOutput() must return nullptr or a non-empty vector: {}",

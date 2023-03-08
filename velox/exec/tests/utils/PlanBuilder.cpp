@@ -526,7 +526,9 @@ PlanBuilder::createAggregateExpressionsAndNames(
       resolver.setResultType(resultTypes[i]);
     }
 
-    auto untypedExpr = parse::parseExpr(agg, options_);
+    // COUNT(*) and COUNT(1) are identical
+    auto untypedExpr =
+        parse::parseExpr(agg == "COUNT(*)" ? "COUNT(1)" : agg, options_);
 
     auto expr = std::dynamic_pointer_cast<const core::CallTypedExpr>(
         inferTypes(untypedExpr));
